@@ -16,7 +16,6 @@ const PostController = {
           authorId,
         },
       });
-      console.log(post);
       res.json(post);
     } catch (error) {
       console.error('Error in createPost:', error);
@@ -26,7 +25,29 @@ const PostController = {
   },
 
   getAllPosts: async (req, res) => {
-    res.send('getAllPosts');
+    const userId = req.user.userId;
+
+    try {
+      const posts = await prisma.post.findMany({
+        include: {
+          likes: true,
+          author: true,
+          comments: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      const postsWithLikeInfo = posts.map((post) => ({
+        ...post,
+        likedByUser: post.likes.some((like) => like.userId === userId),
+      }));
+
+      res.json(postsWithLikeInfo);
+    } catch (err) {
+      res.status(500).json({ error: 'Internal server error' });
+    }
   },
 
   getPostById: async (req, res) => {
